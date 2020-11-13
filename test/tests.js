@@ -1,6 +1,6 @@
 var chai = require('chai');
 var chaiHttp = require('chai-http');
-var server = require('../app');
+var {app} = require('../app');
 var should = chai.should();
 var expect = chai.expect;
 chai.use(chaiHttp);
@@ -15,7 +15,7 @@ let testCaseNames = fs.readFileSync(dir + 'description.txt', 'utf8').toString().
 
 
 describe('git_test ', function() {
-	this.timeout(120*1000);
+	this.timeout(200*1000);
 
 	let id = 0;
 	fs.readdirSync(testFolder).sort().forEach(file => {
@@ -32,7 +32,7 @@ describe('git_test ', function() {
 				Promise.mapSeries(event, (e) => {
 					let eve = JSON.parse(e);
 					if(eve.request.method == "DELETE") {
-						return chai.request(server)
+						return chai.request(app)
 							.delete(eve.request.url)
 							.then((res) => {
 								return res;
@@ -41,7 +41,7 @@ describe('git_test ', function() {
 							});
 					}
 					if (eve.request.method == "GET") {
-						return chai.request(server)
+						return chai.request(app)
 							.get(eve.request.url)
 							.then((res) => {
 								return res;
@@ -50,7 +50,7 @@ describe('git_test ', function() {
 							});
 					}
 					if (eve.request.method == "POST") {
-						return chai.request(server)
+						return chai.request(app)
 							.post(eve.request.url)
 							.set(eve.request.headers)
 							.send(eve.request.body)
@@ -61,7 +61,7 @@ describe('git_test ', function() {
 							});
 					}
 					if(eve.request.method == "PUT") {
-						return chai.request(server)
+						return chai.request(app)
 								   .put(eve.request.url)
 								   .set(eve.request.headers)
 								   .send(eve.request.body)

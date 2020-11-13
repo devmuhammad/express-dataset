@@ -1,16 +1,24 @@
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+const express = require('express'),
+      path = require('path'),
+      favicon = require('serve-favicon'),
+      logger = require('morgan'),
+      cookieParser = require('cookie-parser'),
+      bodyParser = require('body-parser'),
+      swaggerUi = require('swagger-ui-express'),
+      index = require('./routes/index'),
+      eraseEvents = require('./routes/eraseEvents'),
+      events = require('./routes/events'),
+      actor = require('./routes/actor'),
+      cors = require('cors'),
+      sqlite3 = require('sqlite3'),
+      swaggerJsdoc = require("swagger-jsdoc"),
+      swagoptions = require('./swagger.js');
 
-var index = require('./routes/index');
-var eraseEvents = require('./routes/eraseEvents');
-var events = require('./routes/events');
-var actor = require('./routes/actor');
+const app = express();
 
-var app = express();
+// const connection = new Sequelize('sqlite::memory:')
+
+const swaggerspecs = swaggerJsdoc(swagoptions);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -24,6 +32,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+//Enable Cors
+// app.use(cors({credentials: true, origin: true}));
+
+
+// create swagger documentation , swaggerUi.setup(swaggerDocument)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerspecs, { explorer: true }));
 
 app.use('/', index);
 app.use('/erase', eraseEvents);
@@ -31,14 +45,15 @@ app.use('/events', events);
 app.use('/actors', actor);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
+app.use((req, res, next) => {
+  const err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
 
+
 // error handler
-app.use(function(err, req, res, next) {
+app.use((err, req, res, next) => {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
@@ -48,4 +63,4 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-module.exports = app;
+module.exports = {app};
