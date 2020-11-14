@@ -15,12 +15,12 @@ let testCaseNames = fs.readFileSync(dir + 'description.txt', 'utf8').toString().
 
 
 describe('git_test ', function() {
-	this.timeout(200*1000);
+	// this.timeout(120*1000);
 
 	let id = 0;
 	fs.readdirSync(testFolder).sort().forEach(file => {
 		if (file[0] != '.' && file != 'description.txt') {
-			it(testCaseNames[id], (done) => {
+			it(testCaseNames[id], () => {
 				let i = 0;
 				let event = [];
 				fs.readFileSync(dir + file, 'utf8').toString().split('\n').forEach(function (line) {
@@ -83,19 +83,19 @@ describe('git_test ', function() {
 							if(e.response.status_code == 404) {
 								continue;
 							}
-		 					expect(ar2.length).to.equal(ar1.length);
+		 					 expect(ar2.length).to.equal(ar1.length);
 							for (let k = 0; k < ar1.length; k++) {
-								expect(ar2[k]).to.deep.equal(ar1[k]);
+							 expect(ar2[k]).to.deep.equal(ar1[k]);
 							}
 						}
 						if (e.request.method == "POST") {
-							expect(results[j].status).to.equal(e.response.status_code);
+							 expect(results[j].status).to.equal(e.response.status_code);
 						}
 						if (e.request.method == "DELETE") {
-							expect(results[j].status).to.equal(e.response.status_code);
+							 expect(results[j].status).to.equal(e.response.status_code);
 						}
 						if (e.request.method == "PUT") {
-							expect(results[j].status).to.equal(e.response.status_code);
+							 expect(results[j].status).to.equal(e.response.status_code);
 						}
 					}
 					done();
