@@ -7,7 +7,7 @@
     "start": "node ./bin/www",
     "dev": "nodemon ./bin/www",
     "pretest": "npm install",
-    "test": "./node_modules/.bin/mocha test "
+    "test": "./node_modules/.bin/mocha test --recursive"
   },
   "dependencies": {
     "async": "^3.2.0",

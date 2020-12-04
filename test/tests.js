@@ -15,12 +15,12 @@ let testCaseNames = fs.readFileSync(dir + 'description.txt', 'utf8').toString().
 
 
 describe('git_test ', function() {
-	// this.timeout(120*1000);
+	this.timeout(120*1000);
 
 	let id = 0;
 	fs.readdirSync(testFolder).sort().forEach(file => {
 		if (file[0] != '.' && file != 'description.txt') {
-			it(testCaseNames[id], () => {
+			it(testCaseNames[id], (done) => {
 				let i = 0;
 				let event = [];
 				fs.readFileSync(dir + file, 'utf8').toString().split('\n').forEach(function (line) {
@@ -75,6 +75,7 @@ describe('git_test ', function() {
 
 				}).then((results) => {
 					for (let j = 0; j < results.length; j++) {
+						
 						let e = JSON.parse(event[j]);
 						if(e.request.method == "GET") {
 							results[j].should.have.status(e.response.status_code);
@@ -99,7 +100,7 @@ describe('git_test ', function() {
 						}
 					}
 					done();
-				}).catch((err) => {
+				}).catch(() => {
 					console.log(err);
 					done(err);
 				});
@@ -107,5 +108,5 @@ describe('git_test ', function() {
 			id += 1;
 		}
 	})
-
+	
 });

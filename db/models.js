@@ -5,7 +5,13 @@ const {Sequelize, DataTypes } = require('sequelize');
 
 const connection = new Sequelize({
     dialect: 'sqlite',
-    storage: './db/db.sqlite'
+    storage: './db/db.sqlite',
+    pool: {
+        max : 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+    }
   });
 
 const EventModel = connection.define('event', {
@@ -16,13 +22,14 @@ const EventModel = connection.define('event', {
         allowNull: false,
     },
     type: DataTypes.STRING,
+    created_at: DataTypes.STRING,
     actorId: DataTypes.INTEGER,
     repoId: DataTypes.INTEGER,
-    created_at: { 
-        type: DataTypes.DATE,
-        defaultValue:  new Date(Date.now()).toISOString()
-    },
     
+    // { 
+    //     type: DataTypes.DATE,
+    //     // defaultValue:  new Date(Date.now()).toISOString()
+    // }
     },{
         timestamps: false
     })
@@ -64,19 +71,6 @@ const RepoModel = connection.define('repo', {
 
 EventModel.belongsTo(ActorModel, { foreignKey: 'actorId'})
 EventModel.belongsTo(RepoModel, { foreignKey: 'repoId'})
-// ActorModel.hasMany(EventModel)
-// RepoModel.hasMany(EventModel)
 
-connection
-  .sync({force: true})
-    // logging: console.log
-  // })
-  // .authenticate()
-  .then(() => {
-    console.log('Connection to database established successfully.');
-    })
-    .catch(err => {
-    console.log('Unable to connect to the database: ', err);
-    })
 
-module.exports = {EventModel, ActorModel, RepoModel};
+module.exports = {EventModel, ActorModel, RepoModel, connection};

@@ -7,13 +7,31 @@
 const {app} = require('../app');
 const debug = require('debug')('GithubDatasetAPI:server');
 const http = require('http');
-
+const {connection} = require('../db/models');
 /**
  * Get port from environment and store in Express.
  */
 
 const port = normalizePort(8000);
 app.set('port', port);
+
+
+/**
+ * Create DB connection
+ */
+
+connection
+.sync({force: true})
+  // logging: console.log
+// })
+// .authenticate()
+.then(() => {
+  console.log('Connection to database established successfully.');
+  })
+  .catch(err => {
+  console.log('Unable to connect to the database: ', err);
+  })
+
 
 /**
  * Create HTTP server.

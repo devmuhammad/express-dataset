@@ -2,17 +2,15 @@
 const {EventModel} = require('../db/models')
 const {ActorModel} = require('../db/models')
 const {RepoModel} = require('../db/models')
-const _ = require('lodash')
+const _ = require('lodash');
 
-const getAllActors = async (req, res, next) => {
+const getAllActors = async (req, res) => {
 	let actorList = []
 	await ActorModel.findAll({raw: true})
 	.then(res => {actorList = res;})
 
-	
 	if(actorList.length == 0){
-		res.status(404).send('No record found !')
-		// send({status:"Failed", message:"No record found !"});
+		res.status(404).send("No record found !")
 	}
 
 	const collectData = async() => {
@@ -26,7 +24,7 @@ const getAllActors = async (req, res, next) => {
 			// distinct: true,
 			// col: 'actorId',
 			
-		}).then(result => {  actorList[i].eventCount = result.count })
+		}).then(result => { actorList[i].eventCount = result.count })
 		await EventModel.findAll({
 			raw: true,
 			where:{ actorId: element.id},
@@ -35,7 +33,7 @@ const getAllActors = async (req, res, next) => {
 			],
 			limit:1
 		})
-		.then( result => {actorList[i].timestamp = result[0].created_at})
+		.then( result => {if (actorList[i].eventCount >= 1) actorList[i].timestamp = new Date(result[0].created_at)})
 			ctr++; 
          if (ctr === arr.length) {
 			sendData();
@@ -45,7 +43,8 @@ const getAllActors = async (req, res, next) => {
 
 	const sendData = async () =>{
 		const result = await _.orderBy(actorList,['eventCount','timestamp','login'], ['desc','desc','asc'] )
-		return res.status(200).json({status:"Success", message:"Actors Retrieved", data:result});
+		const reslt = await result.map((el) => { return{ 'id':el.id, 'login':el.login, 'avatar_url':el.avatar_url}})
+		return res.status(200).send(reslt)
 	}
 		
 	return collectData()
@@ -53,54 +52,62 @@ const getAllActors = async (req, res, next) => {
 			
 		})
 		.catch(error => {
-		res.status(500).send({status:"Failed", message:'DB Error', data:error});
+		res.status(500).send(error);
 		})
 	
 };
 
-const updateActor = async (req, res, next) => {
+const updateActor = async (req, res) => {
 	const actor = req.body
 
 	await ActorModel.findByPk(actor.id)
 	.then(async availableactor => {
-		if (!availableactor) return res.status(404).send('Actor ID does not exist !')
-		// .send({status:"Failed", message:"ID does not exist !"});
+		if (!availableactor) return res.status(404).send("ID does not exist !");
 
-		if (actor.login !== availableactor.login ) return res.status(400).send({status:"Failed", message:"Only avatar update allowed !"});
+		if (actor.login !== availableactor.login ) return res.status(400).send("Only avatar update allowed !");
 
 		await ActorModel.update({avatar_url : actor.avatar_url}, {
 			where: { id : actor.id }
 		})
 		.then((updatedActor) => {
-			return res.status(200).json({status:"Success", message:"Actor Avatar Updated !", data:updatedActor});
+			return res.status(200).send({});
 		})
 		.catch(error => {
-			res.status(500).send({status:"Failed", message:'DB Error', data:error});
+			res.status(500).send(error);
 			})
 	})
 
 };
 
-const getStreak = async (req, res, next) => {
+const getStreak = async (req, res) => {
 
 	let actorList = []
+	
 	await ActorModel.findAll({raw: true})
-	.then(res => {actorList = res;})
+	.then(res => {actorList = res})
 
 	
 	if(actorList.length == 0){
-		res.status(404).send('ActorList empty !')
-		// send({status:"Failed", message:"No record found !"});
+		res.status(404).send("No record found !");
 	}
+
 
 	const currentStreak = (arr) =>{
 
 		let count = 0
+		
 		arr.forEach((el, i) => {
-			// if ((new Date().setUTCHours(0,0,0,0) - new Date(el.created_at).setUTCHours(0,0,0,0)) === i * 86400000) count++
-			// && (new Date() - new Date(el.created_at) < i+1 * 86400000)
-		  if ((new Date() - new Date(el.created_at)) >= i * 86400000  ) count++
+			
+			let dt1 = new Date(el.created_at + 'Z') 
+
+			if (i < arr.length-1){
+			let dt2 = new Date(arr[i+1].created_at + 'Z')
+			// if ((dt1 - dt2 >= i * 86400000) && (dt1 - dt2 < (i+1) * 86400000))  count++			// && (new Date() - new Date(el.created_at) < i+1 * 86400000)
+			if ((dt1.setUTCHours(0,0,0,0) - dt2.setUTCHours(0,0,0,0)) ===  86400000) count++
+		}
+
 		})
+		
 		return count
 	  } 
 
@@ -118,8 +125,13 @@ const getStreak = async (req, res, next) => {
 			],
 		})
 		.then(async result => {
-			actorList[i].timestamp = result[0].created_at
+			
+			if (result.length >= 1){
+			
+				actorList[i].timestamp = await new Date(result[0].created_at)
+			}
 			actorList[i].currentStreak = await currentStreak(result)
+
 		})
 			
 		ctr++; 
@@ -130,7 +142,9 @@ const getStreak = async (req, res, next) => {
 	}	
 	const sendData = async () =>{
 		const result = await _.orderBy(actorList,['currentStreak','timestamp','login'], ['desc','desc','asc'] )
-		return res.status(200).json({status:"Success", message:"Actors Streak Retrieved", data:result});
+		const reslt = await result.map((el) => { return{ 'id':el.id, 'login':el.login, 'avatar_url':el.avatar_url}})
+		// const reslt = await _.map(result, (row) => { return _.omit(row, ['currentStreak','timestamp']) });
+		return res.status(200).json(reslt);
 	}
 		try {
 		return collectData()
@@ -140,7 +154,7 @@ const getStreak = async (req, res, next) => {
 		}
 		catch(error) {
 
-		res.status(500).send({status:"Failed", message:'DB Error', data:error});
+		res.status(500).send(error);
 		}
 
 };

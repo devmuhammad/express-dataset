@@ -1,10 +1,11 @@
 
 const {EventModel} = require('../db/models')
 const {ActorModel} = require('../db/models')
-const {RepoModel} = require('../db/models')
+const {RepoModel} = require('../db/models');
+const { resolve } = require('bluebird');
 
 
-const getAllEvents = async (req, res, next) => {
+const getAllEvents = async (req, res) => {
 
 	await EventModel.findAll({
 		include: [ActorModel, RepoModel],
@@ -15,69 +16,71 @@ const getAllEvents = async (req, res, next) => {
 	})
 	.then(events => {
 		if(!events){
-			res.status(404).send('No record found !')
-			//  ({status:"Failed", message:"No record found !"});
+			res.status(404).send("No record found !");
 		}
-		return res.status(200).json({status:"Success", message:"Events Retrieved", data:events});
+		return res.status(200).send(events);
 		})
 		.catch(error => {
-		res.status(500).send({status:"Failed", message:'DB Error', data:error});
+		res.status(500).send(error);
 		})
 };
 
-const addEvent = async (req, res, next) => {
+const addEvent = async (req, res) => {
 	const {actor, repo} = req.body
 	let eventDetail = {
 		id: req.body.id,
-		actorId: req.body.actor.id,
-		repoId: req.body.repo.id,
 		type: req.body.type,
-		created_at: req.body.created_at
+		created_at: req.body.created_at,
+		actorId: actor.id,
+		repoId: repo.id,
 	}
 
 	await EventModel.findByPk(req.body.id)
 	.then(async evnt => {
 
-		if(evnt) return res.status(400).send({status:"Failed", message:'Event ID Exists'});
-	
-		const createActor = async () => { 
-			const actorExist = await ActorModel.findByPk(req.body.actor.id)
-
-			if (actorExist) return; 
-		await ActorModel.create(actor)
-		.then( actor => {
-			return eventDetail.actorId = actor.id
-		})
-	}
-	
-		const createRepo = async () => { 
-			const repoExist = await RepoModel.findByPk(req.body.repo.id)
-
-			if (repoExist) return;
-		await RepoModel.create(repo)
-		.then( repo => {
-			return eventDetail.repoId = repo.id
-		})
-	}
-	 
+		if(evnt) return res.status(400).send('Event ID Exists');
+		
 		const createEvent = async () => { 
 
-		await EventModel.create(eventDetail)
-		.then(event => {
-			
-			return res.status(201).json({status:"Success", message:"Event Added !", data:event});
-		})
-	}
+			await EventModel.create(eventDetail)
+			.then(event => {
+				
+				return res.status(201).send({});
+			})
+		}
 
+		const createActor = new Promise(async(resolve, reject) => {
+		// async () => { 
+			const actorExist = await ActorModel.findByPk(actor.id)
+
+			if (actorExist) return resolve('exists'); 
+
+		await ActorModel.create(actor)
+		.then( actor => {
+			resolve(eventDetail.actorId = actor.id)
+		})
+	})
+	
+		const createRepo = new Promise(async(resolve, reject) => {
+		// async () => { 
+			const repoExist = await RepoModel.findByPk(repo.id)
+
+			if (repoExist) return resolve('exists');
+		await RepoModel.create(repo)
+		.then( repo => {
+			resolve(eventDetail.repoId = repo.id)
+		})
+	})
+	 
 	try {
-	await Promise.all([createActor(), createRepo()])
+	await Promise.all([createActor, createRepo])
 		.then((result) => {
 			// if (eventDetail.actorId != null )
-
-			return createEvent()
+			resolve(createEvent())
+			// return 
 		})
 	}catch(error) {
-			res.status(500).send({status:"Failed", message:'DB Error', data:error});
+			res.status(500).send(error);
 			}
 	
 
@@ -86,14 +89,13 @@ const addEvent = async (req, res, next) => {
 };
 
 
-const getByActor = async (req, res, next) => {
+const getByActor = async (req, res) => {
 
 	const actorID = req.params.actorID
 
 	await ActorModel.findByPk(actorID)
 	.then(async actor =>{
-		if (!actor) return res.status(404).send('Actor not found !')
-		// ({status:"Failed", message:'Actor not found !'});
+		if (!actor) return res.status(404).send('Actor not found !');
 
 		await EventModel.findAll({ 
 			where: { actorId: actorID},
@@ -105,23 +107,26 @@ const getByActor = async (req, res, next) => {
 		})
 		.then((events) => {
 
-			return res.status(200).json({status:"Success", message:"Events Retrieved by actorId !", data:events});
+			return res.status(200).send(events);
 		})
 		.catch(error => {
-			res.status(500).send({status:"Failed", message:'DB Error', data:error});
+			res.status(500).send(error);
 			})
 	})
 };
 
 
-const eraseEvents = async (req, res, next) => {
+const eraseEvents = async (req, res) => {
 
 	await EventModel.destroy({where: {}})
-	.then(() =>{
-		return res.status(200).json({status:"Success", message:"All Events Deleted !"});
+	.then(async () =>{
+		await ActorModel.destroy({where: {}})
+		await RepoModel.destroy({where: {}})
+		return res.status(200).send({})
+		// send("All Events Deleted !");
 	})
 	.catch(error => {
-		res.status(500).send({status:"Failed", message:'DB Error', data:error});
+		res.status(500).send(error);
 		})
 };
 
